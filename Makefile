@@ -8,7 +8,6 @@ stop:
 	docker-compose stop
 migrate:
 	docker-compose exec app php artisan migrate:fresh --force --seed
-	docker-compose exec app php artisan passport:install
 seed:
 	docker-compose exec app php artisan db:seed
 test:
