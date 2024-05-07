@@ -28,6 +28,12 @@ class Task extends Model
         'status' => TaskStatus::class,
     ];
 
+    public const ALLOWED_SORT_BY = [
+        'created_at',
+        'completed_at',
+        'priority',
+    ];
+
     public function subtasks(): HasMany
     {
         return $this->hasMany(Task::class, 'parent_id');
