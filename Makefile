@@ -10,8 +10,8 @@ migrate:
 	docker-compose exec app php artisan migrate:fresh --force --seed
 seed:
 	docker-compose exec app php artisan db:seed
-test:
-	docker-compose exec app ./vendor/bin/phpunit --stop-on-failure
+swagger:
+	docker-compose exec app php artisan l5-swagger:generate
 shell:
 	docker-compose exec app sh
 composer-install:
