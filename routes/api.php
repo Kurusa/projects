@@ -1,7 +1,10 @@
 <?php
 
+use App\Http\Controllers\AuthorizationController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\TaskController;
+
+Route::post('login', [AuthorizationController::class, 'login']);
 
 Route::middleware('auth:api')->group(function () {
     Route::prefix('tasks')->group(function () {
