@@ -44,6 +44,15 @@ To get the project up and running locally, follow these steps:
 - Access the backend through `http://localhost:8080/api` for API routes.
 - Access Swagger documentation `http://localhost:8080/api/documentation` for API routes.
 
+### Test User
+
+A test user is automatically created during the database seeding process. You can use these credentials to log in via the Swagger documentation to obtain a token and test the API routes:
+
+- **Email:** test@gmail.com
+- **Password:** password
+
+Log in through the Swagger UI to get an authentication token. Use this token in the `Authorization` header as `Bearer {token}` to authenticate your requests to the API.
+
 ### Useful Commands
 
 - `make up`: Start the Docker containers.
