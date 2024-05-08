@@ -39,6 +39,10 @@ class TaskResource extends JsonResource
      *     type="integer"
      * ),
      * @OA\Property(
+     *     property="parent_id",
+     *     type="integer"
+     * ),
+     * @OA\Property(
      *     property="created_at",
      *     type="string",
      *     format="date-time"
@@ -65,6 +69,7 @@ class TaskResource extends JsonResource
             'description' => $this->description,
             'status' => $this->status,
             'priority' => $this->priority,
+            'parent_id' => $this->parent_id,
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,
             'completed_at' => $this->completed_at,

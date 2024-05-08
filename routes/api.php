@@ -4,7 +4,7 @@ use App\Http\Controllers\AuthorizationController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\TaskController;
 
-Route::post('login', [AuthorizationController::class, 'login']);
+Route::post('login', [AuthorizationController::class, 'login'])->name('login');
 
 Route::middleware('auth:sanctum')->group(function () {
     Route::prefix('tasks')->group(function () {

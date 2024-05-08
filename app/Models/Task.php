@@ -28,12 +28,6 @@ class Task extends Model
         'status' => TaskStatus::class,
     ];
 
-    public const ALLOWED_SORT_BY = [
-        'created_at',
-        'completed_at',
-        'priority',
-    ];
-
     public function subtasks(): HasMany
     {
         return $this->hasMany(Task::class, 'parent_id');
@@ -52,6 +46,11 @@ class Task extends Model
     public function isCompleted(): bool
     {
         return $this->status === TaskStatus::COMPLETE;
+    }
+
+    public function isOwner(User $user): bool
+    {
+        return $this->user_id === $user->id;
     }
 
     public function scopeStatus(Builder $query, $status): void

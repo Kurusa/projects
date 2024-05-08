@@ -61,8 +61,7 @@ class TaskIndexRequest extends FormRequest
             'status' => ['nullable', new Enum(TaskStatus::class)],
             'priority' => ['nullable', 'integer', 'min:1', 'max:5'],
             'text' => ['nullable', 'string', 'max:255'],
-            'sortBy' => ['nullable', 'in:' . implode(',', Task::ALLOWED_SORT_BY)],
-            'sortDirection' => ['nullable', 'in:asc,desc'],
+            'sortBy' => ['nullable', 'string'],
         ];
     }
 }

@@ -10,7 +10,7 @@ class TaskSeeder extends Seeder
 {
     public function run(): void
     {
-        User::factory()->count(3)->create()->each(function (User $user) {
+        User::all()->each(function (User $user) {
             Task::factory()->count(5)->create(['user_id' => $user->id])->each(function (Task $task) {
                 Task::factory()->count(2)->create(['parent_id' => $task->id, 'user_id' => $task->user_id]);
             });

@@ -12,13 +12,9 @@ use Exception;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Http\Response;
+use Illuminate\Validation\UnauthorizedException;
+use Illuminate\Http\Request;
 
-/**
- * @OA\Tag(
- *     name="Tasks",
- *     description="Operations about tasks"
- * )
- */
 class TaskController extends Controller
 {
     public function __construct(readonly TaskService $service)
@@ -56,15 +52,8 @@ class TaskController extends Controller
      *         name="sortBy",
      *         in="query",
      *         required=false,
-     *         description="Sort by field",
+     *         description="Fields to sort by with directions (e.g., created_at:desc,title:asc)",
      *         @OA\Schema(type="string")
-     *     ),
-     *     @OA\Parameter(
-     *         name="sortDirection",
-     *         in="query",
-     *         required=false,
-     *         description="Sort direction (asc or desc)",
-     *         @OA\Schema(type="string", enum={"asc", "desc"})
      *     ),
      *     @OA\Response(
      *         response=200,
@@ -129,12 +118,16 @@ class TaskController extends Controller
      *     )
      * )
      */
-    public function complete(Task $task): JsonResponse
+    public function complete(Task $task, Request $request): JsonResponse
     {
         try {
+            if (!$task->isOwner($request->user())) {
+                throw new UnauthorizedException('You are not authorized for this action.');
+            }
+
             $task = $this->service->complete($task);
 
-            return TaskResource::make($task);
+            return response()->json(TaskResource::make($task));
         } catch (Exception $e) {
             return response()->json([
                 'error' => $e->getMessage()
@@ -174,38 +167,18 @@ class TaskController extends Controller
     public function update(Task $task, TaskUpdateRequest $request): JsonResponse
     {
         try {
+            if (!$task->isOwner($request->user())) {
+                throw new UnauthorizedException('You are not authorized for this action.');
+            }
+
             $task = $this->service->update($task, $request->validated());
-            return TaskResource::make($task);
+
+            return response()->json(TaskResource::make($task));
         } catch (Exception $e) {
             return response()->json([
                 'error' => $e->getMessage()
             ], Response::HTTP_UNPROCESSABLE_ENTITY);
         }
-    }
-
-    /**
-     * @OA\Get(
-     *     path="/api/tasks/{taskId}",
-     *     tags={"Tasks"},
-     *     summary="Get a task",
-     *     security={{"bearerAuth":{}}},
-     *     @OA\Parameter(
-     *         name="taskId",
-     *         in="path",
-     *         required=true,
-     *         description="ID of the task",
-     *         @OA\Schema(type="integer", format="int64")
-     *     ),
-     *     @OA\Response(
-     *         response=200,
-     *         description="Successful operation",
-     *         @OA\JsonContent(ref="#/components/schemas/TaskResource")
-     *     )
-     * )
-     */
-    public function show(Task $task): TaskResource
-    {
-        return TaskResource::make($task);
     }
 
     /**
@@ -242,9 +215,13 @@ class TaskController extends Controller
      *     )
      * )
      */
-    public function destroy(Task $task): JsonResponse
+    public function destroy(Task $task, Request $request): JsonResponse
     {
         try {
+            if (!$task->isOwner($request->user())) {
+                throw new UnauthorizedException('You are not authorized for this action.');
+            }
+
             $this->service->delete($task);
 
             return response()->json([], Response::HTTP_NO_CONTENT);

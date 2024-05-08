@@ -19,11 +19,18 @@ class TaskService
             ->priority($filters['priority'] ?? null)
             ->textSearch($filters['text'] ?? null);
 
-        $sortBy = $filters['sortBy'] ?? 'created_at';
+        if (isset($filters['sortBy'])) {
+            $sorts = explode(',', $filters['sortBy']);
 
-        $sortDirection = $filters['sortDirection'] ?? 'asc';
-
-        $query->orderBy($sortBy, $sortDirection);
+            foreach ($sorts as $sort) {
+                $parts = explode(':', $sort);
+                $field = $parts[0];
+                $direction = $parts[1] ?? 'asc';
+                $query->orderBy($field, $direction);
+            }
+        } else {
+            $query->orderBy('created_at');
+        }
 
         return $query->get();
     }

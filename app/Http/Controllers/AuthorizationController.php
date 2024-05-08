@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Auth;
 
 class AuthorizationController extends Controller
@@ -41,6 +42,6 @@ class AuthorizationController extends Controller
             return response()->json(['token' => $token]);
         }
 
-        return response()->json(['error' => 'Unauthorized'], 401);
+        return response()->json(['error' => 'Unauthorized'], Response::HTTP_FORBIDDEN);
     }
 }
