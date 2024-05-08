@@ -40,7 +40,7 @@ class TaskService
 
     public function complete(Task $task): Task
     {
-        if ($task->subtasks()->where('status', TaskStatus::TODO)->exists()) {
+        if ($task->subtasks()->whereIn('status', [TaskStatus::TODO, TaskStatus::IN_PROGRESS])->exists()) {
             throw new CannotCompleteTaskException('All subtasks must be completed before marking this task as completed.');
         }
 
