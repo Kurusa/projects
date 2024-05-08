@@ -13,7 +13,7 @@ class TaskService
 {
     public function search(User $user, array $filters): Collection
     {
-        $query = $user->tasks();
+        $query = $user->tasks()->with('subtasks');
 
         $query->status($filters['status'] ?? null)
             ->priority($filters['priority'] ?? null)

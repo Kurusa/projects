@@ -73,6 +73,9 @@ class TaskResource extends JsonResource
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,
             'completed_at' => $this->completed_at,
+            'subtasks' => $this->whenLoaded('subtasks', function () {
+                return TaskResource::collection($this->subtasks);
+            }),
         ];
     }
 }
