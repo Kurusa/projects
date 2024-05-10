@@ -126,6 +126,7 @@ return [
     ],
 
     'providers' => ServiceProvider::defaultProviders()->merge([
+        App\Providers\AuthServiceProvider::class,
         App\Providers\RouteServiceProvider::class,
         L5Swagger\L5SwaggerServiceProvider::class,
     ])->toArray(),

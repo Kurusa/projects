@@ -2,50 +2,38 @@
 
 namespace App\Services;
 
+use App\DTO\TaskDTO;
 use App\Enums\TaskStatus;
 use App\Exceptions\CannotCompleteTaskException;
 use App\Exceptions\CannotDeleteTaskException;
 use App\Models\Task;
 use App\Models\User;
-use Illuminate\Database\Eloquent\Collection;
+use App\Repositories\TaskRepository;
 
 class TaskService
 {
-    public function search(User $user, array $filters): Collection
+    private TaskRepository $repository;
+
+    public function __construct(TaskRepository $repository)
     {
-        $query = $user->tasks()->with('subtasks');
-
-        $query->status($filters['status'] ?? null)
-            ->priority($filters['priority'] ?? null)
-            ->textSearch($filters['text'] ?? null);
-
-        if (isset($filters['sortBy'])) {
-            $sorts = explode(',', $filters['sortBy']);
-
-            foreach ($sorts as $sort) {
-                $parts = explode(':', $sort);
-                $field = $parts[0];
-                $direction = $parts[1] ?? 'asc';
-                $query->orderBy($field, $direction);
-            }
-        } else {
-            $query->orderBy('created_at');
-        }
-
-        return $query->get();
+        $this->repository = $repository;
     }
 
-    public function store(User $user, array $data): Task
+    public function search(User $user, array $filters): array
     {
-        return $user->tasks()->create([
-            'title' => $data['title'],
-            'description' => $data['description'],
-            'priority' => $data['priority'],
-            'parent_id' => $data['parent_id'] ?? null,
-        ]);
+        $tasks = $this->repository->search($user, $filters);
+
+        return TaskDTO::collection($tasks->map(fn(Task $task) => TaskDTO::fromModel($task))->all());
     }
 
-    public function complete(Task $task): Task
+    public function store(User $user, TaskDTO $data): TaskDTO
+    {
+        $task = $user->tasks()->create($data->only('title', 'description', 'priority', 'parent_id')->toArray());
+
+        return TaskDTO::fromModel($task);
+    }
+
+    public function complete(Task $task): TaskDTO
     {
         if ($task->subtasks()->whereIn('status', [TaskStatus::TODO, TaskStatus::IN_PROGRESS])->exists()) {
             throw new CannotCompleteTaskException('All subtasks must be completed before marking this task as completed.');
@@ -56,14 +44,14 @@ class TaskService
             'completed_at' => now(),
         ]);
 
-        return $task;
+        return TaskDTO::fromModel($task);
     }
 
-    public function update(Task $task, array $data): Task
+    public function update(Task $task, TaskDTO $data): TaskDTO
     {
-        $task->update($data);
+        $task->update($data->only('title', 'description', 'priority', 'parent_id')->toArray());
 
-        return $task;
+        return TaskDTO::fromModel($task);
     }
 
     public function delete(Task $task): void

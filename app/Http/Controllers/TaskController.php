@@ -2,18 +2,16 @@
 
 namespace App\Http\Controllers;
 
+use App\DTO\TaskDTO;
 use App\Http\Requests\TaskIndexRequest;
 use App\Http\Requests\TaskStoreRequest;
 use App\Http\Requests\TaskUpdateRequest;
-use App\Http\Resources\TaskResource;
 use App\Models\Task;
 use App\Services\TaskService;
 use Exception;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
-use Illuminate\Http\Response;
-use Illuminate\Validation\UnauthorizedException;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 
 class TaskController extends Controller
 {
@@ -58,15 +56,14 @@ class TaskController extends Controller
      *     @OA\Response(
      *         response=200,
      *         description="Successful operation",
-     *         @OA\JsonContent(type="array", @OA\Items(ref="#/components/schemas/TaskResource"))
+     *         @OA\JsonContent(type="array", @OA\Items(ref="#/components/schemas/TaskDTO"))
      *     )
      * )
      */
-    public function index(TaskIndexRequest $request): AnonymousResourceCollection
+    public function index(TaskIndexRequest $request): JsonResponse
     {
         $tasks = $this->service->search($request->user(), $request->validated());
-
-        return TaskResource::collection($tasks);
+        return response()->json($tasks);
     }
 
     /**
@@ -78,20 +75,33 @@ class TaskController extends Controller
      *     @OA\RequestBody(
      *         required=true,
      *         description="Data needed to create a new task",
-     *         @OA\JsonContent(ref="#/components/schemas/TaskStoreRequest")
+     *         @OA\JsonContent(ref="#/components/schemas/TaskDTO")
      *     ),
      *     @OA\Response(
-     *         response=200,
+     *         response=201,
      *         description="Task created successfully",
-     *         @OA\JsonContent(ref="#/components/schemas/TaskResource")
+     *         @OA\JsonContent(ref="#/components/schemas/TaskDTO")
      *     )
      * )
      */
-    public function store(TaskStoreRequest $request): TaskResource
+    public function store(TaskStoreRequest $request): JsonResponse
     {
-        $task = $this->service->store($request->user(), $request->validated());
+        $data = TaskDTO::from([
+            'id' => 0,
+            'title' => $request->input('title'),
+            'description' => $request->input('description'),
+            'status' => 'todo',
+            'priority' => $request->input('priority'),
+            'parent_id' => $request->input('parent_id'),
+            'created_at' => null,
+            'updated_at' => null,
+            'completed_at' => null,
+            'subtasks' => [],
+        ]);
 
-        return TaskResource::make($task);
+        $task = $this->service->store($request->user(), $data);
+
+        return response()->json($task, Response::HTTP_CREATED);
     }
 
     /**
@@ -110,7 +120,7 @@ class TaskController extends Controller
      *     @OA\Response(
      *         response=200,
      *         description="Task completed successfully",
-     *         @OA\JsonContent(ref="#/components/schemas/TaskResource")
+     *         @OA\JsonContent(ref="#/components/schemas/TaskDTO")
      *     ),
      *     @OA\Response(
      *         response=422,
@@ -120,14 +130,11 @@ class TaskController extends Controller
      */
     public function complete(Task $task, Request $request): JsonResponse
     {
+        $this->authorize('complete', $task);
+
         try {
-            if (!$task->isOwner($request->user())) {
-                throw new UnauthorizedException('You are not authorized for this action.');
-            }
-
-            $task = $this->service->complete($task);
-
-            return response()->json(TaskResource::make($task));
+            $taskDTO = $this->service->complete($task);
+            return response()->json($taskDTO);
         } catch (Exception $e) {
             return response()->json([
                 'error' => $e->getMessage()
@@ -151,12 +158,12 @@ class TaskController extends Controller
      *     @OA\RequestBody(
      *         required=true,
      *         description="Data needed to update the task",
-     *         @OA\JsonContent(ref="#/components/schemas/TaskUpdateRequest")
+     *         @OA\JsonContent(ref="#/components/schemas/TaskDTO")
      *     ),
      *     @OA\Response(
      *         response=200,
      *         description="Task updated successfully",
-     *         @OA\JsonContent(ref="#/components/schemas/TaskResource")
+     *         @OA\JsonContent(ref="#/components/schemas/TaskDTO")
      *     ),
      *     @OA\Response(
      *         response=422,
@@ -166,14 +173,24 @@ class TaskController extends Controller
      */
     public function update(Task $task, TaskUpdateRequest $request): JsonResponse
     {
+        $this->authorize('update', $task);
+
         try {
-            if (!$task->isOwner($request->user())) {
-                throw new UnauthorizedException('You are not authorized for this action.');
-            }
+            $data = TaskDTO::from([
+                'id' => $task->id,
+                'title' => $request->input('title'),
+                'description' => $request->input('description'),
+                'status' => $task->status,
+                'priority' => $request->input('priority'),
+                'parent_id' => $request->input('parent_id'),
+                'created_at' => $task->created_at?->toDateTimeString(),
+                'updated_at' => $task->updated_at?->toDateTimeString(),
+                'completed_at' => $task->completed_at?->toDateTimeString(),
+                'subtasks' => TaskDTO::collection($task->subtasks->map(fn(Task $subtask) => TaskDTO::fromModel($subtask))->all()),
+            ]);
 
-            $task = $this->service->update($task, $request->validated());
-
-            return response()->json(TaskResource::make($task));
+            $taskDTO = $this->service->update($task, $data);
+            return response()->json($taskDTO);
         } catch (Exception $e) {
             return response()->json([
                 'error' => $e->getMessage()
@@ -217,13 +234,10 @@ class TaskController extends Controller
      */
     public function destroy(Task $task, Request $request): JsonResponse
     {
+        $this->authorize('delete', $task);
+
         try {
-            if (!$task->isOwner($request->user())) {
-                throw new UnauthorizedException('You are not authorized for this action.');
-            }
-
             $this->service->delete($task);
-
             return response()->json([], Response::HTTP_NO_CONTENT);
         } catch (Exception $e) {
             return response()->json([

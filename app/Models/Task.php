@@ -70,10 +70,7 @@ class Task extends Model
     public function scopeTextSearch(Builder $query, ?string $text): void
     {
         if (!empty($text)) {
-            $query->where(function ($query) use ($text) {
-                $query->where('title', 'like', '%' . $text . '%')
-                    ->orWhere('description', 'like', '%' . $text . '%');
-            });
+            $query->whereFullText(['title', 'description'], $text);
         }
     }
 }
