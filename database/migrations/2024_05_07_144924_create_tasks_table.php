@@ -19,6 +19,10 @@ return new class extends Migration
             $table->foreignId('parent_id')->nullable()->references('id')->on('tasks')->onDelete('cascade');
             $table->timestamp('completed_at')->nullable();
             $table->timestamps();
+
+            $table->index(['status', 'priority']);
+            $table->index('created_at');
+            $table->index('completed_at');
         });
     }
 
