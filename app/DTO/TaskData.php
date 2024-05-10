@@ -2,14 +2,17 @@
 
 namespace App\DTO;
 
+use App\Enums\TaskStatus;
 use App\Models\Task;
+use Carbon\CarbonImmutable;
 use Spatie\LaravelData\Data;
 use Spatie\LaravelData\Attributes\DataCollectionOf;
 use Spatie\LaravelData\DataCollection;
+use Spatie\LaravelData\Lazy;
 
 /**
  * @OA\Schema(
- *     schema="TaskDTO",
+ *     schema="TaskData",
  *     type="object",
  *     title="Task DTO",
  *     description="DTO representing a task",
@@ -26,40 +29,48 @@ use Spatie\LaravelData\DataCollection;
  *         @OA\Property(
  *             property="subtasks",
  *             type="array",
- *             @OA\Items(ref="#/components/schemas/TaskDTO"),
+ *             @OA\Items(ref="#/components/schemas/TaskData"),
  *             description="List of subtasks"
  *         ),
  *     }
  * )
  */
-class TaskDTO extends Data
+class TaskData extends Data
 {
-    public int $id;
-    public string $title;
-    public ?string $description;
-    public string $status;
-    public int $priority;
-    public ?int $parent_id;
-    public ?string $created_at;
-    public ?string $updated_at;
-    public ?string $completed_at;
-
-    /** @var DataCollection<int, self> */
-    public DataCollection $subtasks;
+    public function __construct(
+        public int                 $id,
+        public string              $title,
+        public ?string             $description,
+        public TaskStatus          $status,
+        public int                 $priority,
+        public ?int                $parent_id,
+        public ?CarbonImmutable    $created_at,
+        public ?CarbonImmutable    $updated_at,
+        public ?CarbonImmutable    $completed_at,
+        #[DataCollectionOf(TaskData::class)]
+        public DataCollection|Lazy $subtasks
+    )
+    {
+    }
 
     public static function fromModel(Task $task): self
     {
         return new self(
-            id: $task->id,
-            title: $task->title,
-            description: $task->description,
-            status: $task->status,
-            priority: $task->priority,
-            parent_id: $task->parent_id,
-            created_at: $task->created_at?->toDateTimeString(),
-            updated_at: $task->updated_at?->toDateTimeString(),
-            completed_at: $task->completed_at?->toDateTimeString(),
-            subtasks: self::collection($task->subtasks->map(fn($subtask) => self::fromModel($subtask))->all())
+            $task->id,
+            $task->title,
+            $task->description,
+            $task->status,
+            $task->priority,
+            $task->parent_id,
+            $task->created_at ? CarbonImmutable::parse($task->created_at) : null,
+            $task->updated_at ? CarbonImmutable::parse($task->updated_at) : null,
+            $task->completed_at ? CarbonImmutable::parse($task->completed_at) : null,
+             TaskData::collection($task->subtasks)
         );
+    }
+
+    public static function collection($tasks): DataCollection
+    {
+        return new DataCollection(TaskData::class, $tasks);
     }
 }

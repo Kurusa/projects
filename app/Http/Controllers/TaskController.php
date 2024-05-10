@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers;
 
-use App\DTO\TaskDTO;
+use App\DTO\TaskData;
 use App\Http\Requests\TaskIndexRequest;
 use App\Http\Requests\TaskStoreRequest;
 use App\Http\Requests\TaskUpdateRequest;
@@ -56,13 +56,14 @@ class TaskController extends Controller
      *     @OA\Response(
      *         response=200,
      *         description="Successful operation",
-     *         @OA\JsonContent(type="array", @OA\Items(ref="#/components/schemas/TaskDTO"))
+     *         @OA\JsonContent(type="array", @OA\Items(ref="#/components/schemas/TaskData"))
      *     )
      * )
      */
     public function index(TaskIndexRequest $request): JsonResponse
     {
         $tasks = $this->service->search($request->user(), $request->validated());
+
         return response()->json($tasks);
     }
 
@@ -75,29 +76,18 @@ class TaskController extends Controller
      *     @OA\RequestBody(
      *         required=true,
      *         description="Data needed to create a new task",
-     *         @OA\JsonContent(ref="#/components/schemas/TaskDTO")
+     *         @OA\JsonContent(ref="#/components/schemas/TaskData")
      *     ),
      *     @OA\Response(
      *         response=201,
      *         description="Task created successfully",
-     *         @OA\JsonContent(ref="#/components/schemas/TaskDTO")
+     *         @OA\JsonContent(ref="#/components/schemas/TaskData")
      *     )
      * )
      */
     public function store(TaskStoreRequest $request): JsonResponse
     {
-        $data = TaskDTO::from([
-            'id' => 0,
-            'title' => $request->input('title'),
-            'description' => $request->input('description'),
-            'status' => 'todo',
-            'priority' => $request->input('priority'),
-            'parent_id' => $request->input('parent_id'),
-            'created_at' => null,
-            'updated_at' => null,
-            'completed_at' => null,
-            'subtasks' => [],
-        ]);
+        $data = TaskData::from($request->validated());
 
         $task = $this->service->store($request->user(), $data);
 
@@ -120,7 +110,7 @@ class TaskController extends Controller
      *     @OA\Response(
      *         response=200,
      *         description="Task completed successfully",
-     *         @OA\JsonContent(ref="#/components/schemas/TaskDTO")
+     *         @OA\JsonContent(ref="#/components/schemas/TaskData")
      *     ),
      *     @OA\Response(
      *         response=422,
@@ -133,8 +123,9 @@ class TaskController extends Controller
         $this->authorize('complete', $task);
 
         try {
-            $taskDTO = $this->service->complete($task);
-            return response()->json($taskDTO);
+            $taskData = $this->service->complete($task);
+
+            return response()->json($taskData);
         } catch (Exception $e) {
             return response()->json([
                 'error' => $e->getMessage()
@@ -158,12 +149,12 @@ class TaskController extends Controller
      *     @OA\RequestBody(
      *         required=true,
      *         description="Data needed to update the task",
-     *         @OA\JsonContent(ref="#/components/schemas/TaskDTO")
+     *         @OA\JsonContent(ref="#/components/schemas/TaskData")
      *     ),
      *     @OA\Response(
      *         response=200,
      *         description="Task updated successfully",
-     *         @OA\JsonContent(ref="#/components/schemas/TaskDTO")
+     *         @OA\JsonContent(ref="#/components/schemas/TaskData")
      *     ),
      *     @OA\Response(
      *         response=422,
@@ -176,21 +167,11 @@ class TaskController extends Controller
         $this->authorize('update', $task);
 
         try {
-            $data = TaskDTO::from([
-                'id' => $task->id,
-                'title' => $request->input('title'),
-                'description' => $request->input('description'),
-                'status' => $task->status,
-                'priority' => $request->input('priority'),
-                'parent_id' => $request->input('parent_id'),
-                'created_at' => $task->created_at?->toDateTimeString(),
-                'updated_at' => $task->updated_at?->toDateTimeString(),
-                'completed_at' => $task->completed_at?->toDateTimeString(),
-                'subtasks' => TaskDTO::collection($task->subtasks->map(fn(Task $subtask) => TaskDTO::fromModel($subtask))->all()),
-            ]);
+            $data = TaskData::from($request->validated());
 
-            $taskDTO = $this->service->update($task, $data);
-            return response()->json($taskDTO);
+            $taskData = $this->service->update($task, $data);
+
+            return response()->json($taskData);
         } catch (Exception $e) {
             return response()->json([
                 'error' => $e->getMessage()
@@ -238,6 +219,7 @@ class TaskController extends Controller
 
         try {
             $this->service->delete($task);
+
             return response()->json([], Response::HTTP_NO_CONTENT);
         } catch (Exception $e) {
             return response()->json([
