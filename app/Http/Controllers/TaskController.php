@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\DTO\TaskData;
+use App\Exceptions\CannotCompleteTaskException;
 use App\Http\Requests\TaskIndexRequest;
 use App\Http\Requests\TaskStoreRequest;
 use App\Http\Requests\TaskUpdateRequest;
@@ -12,6 +13,7 @@ use Exception;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+use Illuminate\Validation\UnauthorizedException;
 
 class TaskController extends Controller
 {
@@ -120,9 +122,11 @@ class TaskController extends Controller
      */
     public function complete(Task $task, Request $request): JsonResponse
     {
-        $this->authorize('complete', $task);
-
         try {
+            if ($request->user()->cannot('complete', $task)) {
+                throw new UnauthorizedException();
+            }
+
             $taskData = $this->service->complete($task);
 
             return response()->json($taskData);
@@ -164,9 +168,11 @@ class TaskController extends Controller
      */
     public function update(Task $task, TaskUpdateRequest $request): JsonResponse
     {
-        $this->authorize('update', $task);
-
         try {
+            if ($request->user()->cannot('update', $task)) {
+                throw new UnauthorizedException();
+            }
+
             $data = TaskData::from($request->validated());
 
             $taskData = $this->service->update($task, $data);
@@ -215,9 +221,11 @@ class TaskController extends Controller
      */
     public function destroy(Task $task, Request $request): JsonResponse
     {
-        $this->authorize('delete', $task);
-
         try {
+            if ($request->user()->cannot('delete', $task)) {
+                throw new UnauthorizedException();
+            }
+
             $this->service->delete($task);
 
             return response()->json([], Response::HTTP_NO_CONTENT);
