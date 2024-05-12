@@ -2,6 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\User;
+use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
+
 /**
  * @OA\SecurityScheme(
  *     securityScheme="bearerAuth",
@@ -17,5 +20,13 @@ namespace App\Http\Controllers;
  */
 abstract class Controller
 {
-    //
+    use AuthorizesRequests;
+
+    public function user(): User
+    {
+        /** @var User $currentUser */
+        $currentUser = auth()->user();
+
+        return $currentUser;
+    }
 }

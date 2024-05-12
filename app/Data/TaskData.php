@@ -1,21 +1,20 @@
 <?php
 
-namespace App\DTO;
+namespace App\Data;
 
 use App\Enums\TaskStatus;
 use App\Models\Task;
 use Carbon\CarbonImmutable;
-use Spatie\LaravelData\Data;
 use Spatie\LaravelData\Attributes\DataCollectionOf;
+use Spatie\LaravelData\Data;
 use Spatie\LaravelData\DataCollection;
-use Spatie\LaravelData\Lazy;
 
 /**
  * @OA\Schema(
  *     schema="TaskData",
  *     type="object",
- *     title="Task DTO",
- *     description="DTO representing a task",
+ *     title="Task Data",
+ *     description="Data representing a task",
  *     properties={
  *         @OA\Property(property="id", type="integer", description="ID of the task"),
  *         @OA\Property(property="title", type="string", description="Title of the task"),
@@ -38,17 +37,17 @@ use Spatie\LaravelData\Lazy;
 class TaskData extends Data
 {
     public function __construct(
-        public int                 $id,
-        public string              $title,
-        public ?string             $description,
-        public TaskStatus          $status,
-        public int                 $priority,
-        public ?int                $parent_id,
-        public ?CarbonImmutable    $created_at,
-        public ?CarbonImmutable    $updated_at,
-        public ?CarbonImmutable    $completed_at,
+        public int              $id,
+        public string           $title,
+        public ?string          $description,
+        public TaskStatus       $status,
+        public int              $priority,
+        public ?int             $parent_id,
+        public ?CarbonImmutable $created_at,
+        public ?CarbonImmutable $updated_at,
+        public ?CarbonImmutable $completed_at,
         #[DataCollectionOf(TaskData::class)]
-        public DataCollection|Lazy $subtasks
+        public ?DataCollection  $subtasks
     )
     {
     }
@@ -65,7 +64,7 @@ class TaskData extends Data
             $task->created_at ? CarbonImmutable::parse($task->created_at) : null,
             $task->updated_at ? CarbonImmutable::parse($task->updated_at) : null,
             $task->completed_at ? CarbonImmutable::parse($task->completed_at) : null,
-             TaskData::collection($task->subtasks)
+            TaskData::collection($task->subtasks)
         );
     }
 

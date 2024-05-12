@@ -2,36 +2,39 @@
 
 namespace App\Services;
 
-use App\DTO\TaskData;
+use App\Data\TaskData;
 use App\Enums\TaskStatus;
 use App\Exceptions\CannotCompleteTaskException;
-use App\Exceptions\CannotDeleteTaskException;
 use App\Models\Task;
 use App\Models\User;
 use App\Repositories\TaskRepository;
 use Spatie\LaravelData\DataCollection;
 
-class TaskService
+readonly class TaskService
 {
-    private TaskRepository $repository;
-
-    public function __construct(TaskRepository $repository)
+    public function __construct(public TaskRepository $repository)
     {
-        $this->repository = $repository;
     }
 
     public function search(User $user, array $filters): DataCollection
     {
         $tasks = $this->repository->search($user, $filters);
 
-        return TaskData::collection($tasks->map(fn(Task $task) => TaskData::fromModel($task)));
+        return TaskData::collection($tasks);
     }
 
     public function store(User $user, TaskData $data): TaskData
     {
-        $task = $user->tasks()->create($data->all());
+        $task = $user->tasks()->create($data->only(
+            'title',
+            'description',
+            'status',
+            'priority',
+            'parent_id',
+            'completed_at',
+        )->toArray());
 
-        return TaskData::fromModel($task);
+        return TaskData::from($task);
     }
 
     public function complete(Task $task): TaskData
@@ -57,10 +60,6 @@ class TaskService
 
     public function delete(Task $task): void
     {
-        if ($task->isCompleted()) {
-            throw new CannotDeleteTaskException("Cannot delete completed task.");
-        }
-
         $task->delete();
     }
 }

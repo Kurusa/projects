@@ -2,18 +2,13 @@
 
 namespace App\Http\Controllers;
 
-use App\DTO\TaskData;
-use App\Exceptions\CannotCompleteTaskException;
+use App\Data\TaskData;
 use App\Http\Requests\TaskIndexRequest;
-use App\Http\Requests\TaskStoreRequest;
-use App\Http\Requests\TaskUpdateRequest;
 use App\Models\Task;
 use App\Services\TaskService;
 use Exception;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
 use Illuminate\Http\Response;
-use Illuminate\Validation\UnauthorizedException;
 
 class TaskController extends Controller
 {
@@ -64,7 +59,7 @@ class TaskController extends Controller
      */
     public function index(TaskIndexRequest $request): JsonResponse
     {
-        $tasks = $this->service->search($request->user(), $request->validated());
+        $tasks = $this->service->search($this->user(), $request->validated());
 
         return response()->json($tasks);
     }
@@ -87,11 +82,9 @@ class TaskController extends Controller
      *     )
      * )
      */
-    public function store(TaskStoreRequest $request): JsonResponse
+    public function store(TaskData $taskData): JsonResponse
     {
-        $data = TaskData::from($request->validated());
-
-        $task = $this->service->store($request->user(), $data);
+        $task = $this->service->store($this->user(), $taskData);
 
         return response()->json($task, Response::HTTP_CREATED);
     }
@@ -120,12 +113,10 @@ class TaskController extends Controller
      *     )
      * )
      */
-    public function complete(Task $task, Request $request): JsonResponse
+    public function complete(Task $task): JsonResponse
     {
         try {
-            if ($request->user()->cannot('complete', $task)) {
-                throw new UnauthorizedException();
-            }
+            $this->authorize('complete', $task);
 
             $taskData = $this->service->complete($task);
 
@@ -166,16 +157,12 @@ class TaskController extends Controller
      *     )
      * )
      */
-    public function update(Task $task, TaskUpdateRequest $request): JsonResponse
+    public function update(Task $task, TaskData $taskData): JsonResponse
     {
         try {
-            if ($request->user()->cannot('update', $task)) {
-                throw new UnauthorizedException();
-            }
+            $this->authorize('update', $task);
 
-            $data = TaskData::from($request->validated());
-
-            $taskData = $this->service->update($task, $data);
+            $taskData = $this->service->update($task, $taskData->toArray());
 
             return response()->json($taskData);
         } catch (Exception $e) {
@@ -219,12 +206,10 @@ class TaskController extends Controller
      *     )
      * )
      */
-    public function destroy(Task $task, Request $request): JsonResponse
+    public function destroy(Task $task): JsonResponse
     {
         try {
-            if ($request->user()->cannot('delete', $task)) {
-                throw new UnauthorizedException();
-            }
+            $this->authorize('delete', $task);
 
             $this->service->delete($task);
 
